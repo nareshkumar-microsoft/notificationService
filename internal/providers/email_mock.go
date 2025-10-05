@@ -24,16 +24,16 @@ type MockEmailProvider struct {
 
 // EmailTemplate represents an email template
 type EmailTemplate struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Subject     string            `json:"subject"`
-	HTMLBody    string            `json:"html_body"`
-	TextBody    string            `json:"text_body"`
-	Variables   []string          `json:"variables"`
-	Category    string            `json:"category"`
-	CreatedAt   time.Time         `json:"created_at"`
-	UpdatedAt   time.Time         `json:"updated_at"`
-	Metadata    map[string]string `json:"metadata,omitempty"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Subject   string            `json:"subject"`
+	HTMLBody  string            `json:"html_body"`
+	TextBody  string            `json:"text_body"`
+	Variables []string          `json:"variables"`
+	Category  string            `json:"category"`
+	CreatedAt time.Time         `json:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
 }
 
 // SentEmail represents an email that was sent (for mock tracking)
@@ -60,10 +60,10 @@ func NewMockEmailProvider(cfg config.EmailProviderConfig) *MockEmailProvider {
 		sentEmails: make([]SentEmail, 0),
 		healthy:    true,
 	}
-	
+
 	// Load default templates
 	provider.loadDefaultTemplates()
-	
+
 	return provider
 }
 
@@ -72,13 +72,13 @@ func (p *MockEmailProvider) Send(ctx context.Context, notification *models.Notif
 	if !p.healthy {
 		return nil, errors.NewProviderError("mock-email", errors.ErrorCodeProviderUnavailable, "provider is unhealthy")
 	}
-	
+
 	// Convert generic notification to email notification
 	emailNotification, err := p.convertToEmailNotification(notification)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return p.SendEmail(ctx, emailNotification)
 }
 
@@ -87,12 +87,12 @@ func (p *MockEmailProvider) SendEmail(ctx context.Context, email *models.EmailNo
 	if !p.healthy {
 		return nil, errors.NewProviderError("mock-email", errors.ErrorCodeProviderUnavailable, "provider is unhealthy")
 	}
-	
+
 	// Validate email
 	if err := p.validateEmailNotification(email); err != nil {
 		return nil, err
 	}
-	
+
 	// Simulate processing delay
 	select {
 	case <-ctx.Done():
@@ -100,7 +100,7 @@ func (p *MockEmailProvider) SendEmail(ctx context.Context, email *models.EmailNo
 	case <-time.After(100 * time.Millisecond):
 		// Continue processing
 	}
-	
+
 	// Create sent email record
 	sentEmail := SentEmail{
 		ID:       email.ID,
@@ -121,10 +121,10 @@ func (p *MockEmailProvider) SendEmail(ctx context.Context, email *models.EmailNo
 			"retry_count": "0",
 		},
 	}
-	
+
 	// Store sent email for tracking
 	p.sentEmails = append(p.sentEmails, sentEmail)
-	
+
 	// Create response
 	now := time.Now()
 	response := &models.NotificationResponse{
@@ -134,7 +134,7 @@ func (p *MockEmailProvider) SendEmail(ctx context.Context, email *models.EmailNo
 		ProviderID: sentEmail.ProviderData["message_id"],
 		SentAt:     &now,
 	}
-	
+
 	return response, nil
 }
 
@@ -172,7 +172,7 @@ func (p *MockEmailProvider) IsHealthy(ctx context.Context) error {
 	if !p.healthy {
 		return errors.NewProviderError("mock-email", errors.ErrorCodeProviderUnavailable, "provider is marked as unhealthy")
 	}
-	
+
 	// Simulate health check delay
 	select {
 	case <-ctx.Done():
@@ -218,11 +218,11 @@ func (p *MockEmailProvider) AddTemplate(template *EmailTemplate) error {
 	if template.ID == "" {
 		template.ID = uuid.New().String()
 	}
-	
+
 	now := time.Now()
 	template.CreatedAt = now
 	template.UpdatedAt = now
-	
+
 	p.templates[template.ID] = template
 	return nil
 }
@@ -233,7 +233,7 @@ func (p *MockEmailProvider) RenderTemplate(templateID string, data map[string]st
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Clone template for rendering
 	rendered := &EmailTemplate{
 		ID:        template.ID,
@@ -247,7 +247,7 @@ func (p *MockEmailProvider) RenderTemplate(templateID string, data map[string]st
 		UpdatedAt: template.UpdatedAt,
 		Metadata:  template.Metadata,
 	}
-	
+
 	return rendered, nil
 }
 
@@ -271,7 +271,7 @@ func (p *MockEmailProvider) convertToEmailNotification(notification *models.Noti
 	if notification.Type != models.NotificationTypeEmail {
 		return nil, errors.NewValidationError("type", "notification type must be email")
 	}
-	
+
 	emailNotification := &models.EmailNotification{
 		Notification: *notification,
 		To:           []string{notification.Recipient},
@@ -279,7 +279,7 @@ func (p *MockEmailProvider) convertToEmailNotification(notification *models.Noti
 		HTMLBody:     notification.Body,
 		TextBody:     notification.Body,
 	}
-	
+
 	return emailNotification, nil
 }
 
@@ -289,50 +289,50 @@ func (p *MockEmailProvider) validateEmailNotification(email *models.EmailNotific
 	if len(email.To) == 0 {
 		return errors.NewValidationError("to", "at least one recipient is required")
 	}
-	
+
 	for _, addr := range email.To {
 		if err := p.ValidateEmailAddress(addr); err != nil {
 			return errors.NewValidationError("to", fmt.Sprintf("invalid email address: %s", addr))
 		}
 	}
-	
+
 	// Validate CC addresses
 	for _, addr := range email.CC {
 		if err := p.ValidateEmailAddress(addr); err != nil {
 			return errors.NewValidationError("cc", fmt.Sprintf("invalid email address: %s", addr))
 		}
 	}
-	
+
 	// Validate BCC addresses
 	for _, addr := range email.BCC {
 		if err := p.ValidateEmailAddress(addr); err != nil {
 			return errors.NewValidationError("bcc", fmt.Sprintf("invalid email address: %s", addr))
 		}
 	}
-	
+
 	// Validate From address
 	if email.From != "" {
 		if err := p.ValidateEmailAddress(email.From); err != nil {
 			return errors.NewValidationError("from", "invalid sender email address")
 		}
 	}
-	
+
 	// Validate ReplyTo address
 	if email.ReplyTo != "" {
 		if err := p.ValidateEmailAddress(email.ReplyTo); err != nil {
 			return errors.NewValidationError("reply_to", "invalid reply-to email address")
 		}
 	}
-	
+
 	// Validate content
 	if email.Subject == "" {
 		return errors.NewValidationError("subject", "email subject is required")
 	}
-	
+
 	if email.HTMLBody == "" && email.TextBody == "" {
 		return errors.NewValidationError("body", "email must have either HTML or text body")
 	}
-	
+
 	return nil
 }
 
@@ -358,9 +358,9 @@ func (p *MockEmailProvider) replaceVariables(template string, data map[string]st
 func (p *MockEmailProvider) loadDefaultTemplates() {
 	// Welcome email template
 	welcomeTemplate := &EmailTemplate{
-		ID:       "welcome",
-		Name:     "Welcome Email",
-		Subject:  "Welcome to {{service_name}}, {{user_name}}!",
+		ID:      "welcome",
+		Name:    "Welcome Email",
+		Subject: "Welcome to {{service_name}}, {{user_name}}!",
 		HTMLBody: `
 			<html>
 				<body>
@@ -384,12 +384,12 @@ func (p *MockEmailProvider) loadDefaultTemplates() {
 		Variables: []string{"user_name", "user_email", "service_name"},
 		Category:  "onboarding",
 	}
-	
+
 	// Password reset template
 	resetTemplate := &EmailTemplate{
-		ID:       "password_reset",
-		Name:     "Password Reset",
-		Subject:  "Reset your {{service_name}} password",
+		ID:      "password_reset",
+		Name:    "Password Reset",
+		Subject: "Reset your {{service_name}} password",
 		HTMLBody: `
 			<html>
 				<body>
@@ -418,12 +418,12 @@ func (p *MockEmailProvider) loadDefaultTemplates() {
 		Variables: []string{"user_name", "service_name", "reset_link", "expiry_time"},
 		Category:  "security",
 	}
-	
+
 	// Notification email template
 	notificationTemplate := &EmailTemplate{
-		ID:       "notification",
-		Name:     "General Notification",
-		Subject:  "{{notification_title}}",
+		ID:      "notification",
+		Name:    "General Notification",
+		Subject: "{{notification_title}}",
 		HTMLBody: `
 			<html>
 				<body>
@@ -443,7 +443,7 @@ func (p *MockEmailProvider) loadDefaultTemplates() {
 		Variables: []string{"notification_title", "notification_message", "timestamp"},
 		Category:  "general",
 	}
-	
+
 	p.AddTemplate(welcomeTemplate)
 	p.AddTemplate(resetTemplate)
 	p.AddTemplate(notificationTemplate)

@@ -16,56 +16,56 @@ import (
 func main() {
 	fmt.Println("🔔 Email Notification Provider Demo")
 	fmt.Println("=====================================")
-	
+
 	// Create logger
 	logger := utils.NewSimpleLogger("info")
-	
+
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
-	
+
 	// Demo 1: Direct provider usage
 	fmt.Println("\n📧 Demo 1: Direct Email Provider Usage")
 	fmt.Println("--------------------------------------")
 	demoDirectProvider(cfg.Providers.Email, logger)
-	
+
 	// Demo 2: Email service usage
 	fmt.Println("\n📬 Demo 2: Email Service Usage")
 	fmt.Println("------------------------------")
 	demoEmailService(cfg.Providers.Email, logger)
-	
+
 	// Demo 3: Template rendering
 	fmt.Println("\n📄 Demo 3: Template Rendering")
 	fmt.Println("-----------------------------")
 	demoTemplateRendering(cfg.Providers.Email, logger)
-	
+
 	// Demo 4: Bulk email
 	fmt.Println("\n📮 Demo 4: Bulk Email Sending")
 	fmt.Println("-----------------------------")
 	demoBulkEmail(cfg.Providers.Email, logger)
-	
+
 	// Demo 5: Error handling
 	fmt.Println("\n⚠️  Demo 5: Error Handling")
 	fmt.Println("-------------------------")
 	demoErrorHandling(cfg.Providers.Email, logger)
-	
+
 	fmt.Println("\n✅ All email demos completed successfully!")
 }
 
 func demoDirectProvider(cfg config.EmailProviderConfig, logger *utils.SimpleLogger) {
 	// Create mock email provider
 	provider := providers.NewMockEmailProvider(cfg)
-	
+
 	ctx := context.Background()
-	
+
 	// Check provider health
 	if err := provider.IsHealthy(ctx); err != nil {
 		logger.Errorf("Provider health check failed: %v", err)
 		return
 	}
-	
+
 	// Create sample email notification
 	emailNotification := &models.EmailNotification{
 		Notification: models.Notification{
@@ -87,20 +87,20 @@ func demoDirectProvider(cfg config.EmailProviderConfig, logger *utils.SimpleLogg
 			"X-Demo": "Direct-Provider",
 		},
 	}
-	
+
 	// Send email
 	response, err := provider.SendEmail(ctx, emailNotification)
 	if err != nil {
 		logger.Errorf("Failed to send email: %v", err)
 		return
 	}
-	
+
 	logger.Infof("✅ Email sent successfully!")
 	logger.Infof("   ID: %s", response.ID)
 	logger.Infof("   Status: %s", response.Status)
 	logger.Infof("   Provider ID: %s", response.ProviderID)
 	logger.Infof("   Message: %s", response.Message)
-	
+
 	// Show sent emails
 	sentEmails := provider.GetSentEmails()
 	logger.Infof("📊 Total emails sent: %d", len(sentEmails))
@@ -113,9 +113,9 @@ func demoEmailService(cfg config.EmailProviderConfig, logger *utils.SimpleLogger
 		logger.Errorf("Failed to create email service: %v", err)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Simple email request
 	request := &services.EmailRequest{
 		To:       []string{"user@example.com"},
@@ -128,17 +128,17 @@ func demoEmailService(cfg config.EmailProviderConfig, logger *utils.SimpleLogger
 			"version":   "1.0",
 		},
 	}
-	
+
 	response, err := service.SendEmail(ctx, request)
 	if err != nil {
 		logger.Errorf("Failed to send email: %v", err)
 		return
 	}
-	
+
 	logger.Infof("✅ Email sent through service!")
 	logger.Infof("   ID: %s", response.ID)
 	logger.Infof("   Status: %s", response.Status)
-	
+
 	// Check provider status
 	status := service.GetProviderStatus(ctx)
 	logger.Infof("📊 Provider Status:")
@@ -153,32 +153,32 @@ func demoTemplateRendering(cfg config.EmailProviderConfig, logger *utils.SimpleL
 		logger.Errorf("Failed to create email service: %v", err)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// List available templates
 	templates := service.GetEmailTemplates()
 	logger.Infof("📄 Available templates: %d", len(templates))
 	for _, template := range templates {
 		logger.Infof("   - %s: %s (%s)", template.ID, template.Name, template.Category)
 	}
-	
+
 	// Render welcome template
 	templateData := map[string]string{
 		"user_name":    "John Doe",
 		"user_email":   "john.doe@example.com",
 		"service_name": "Notification Service Demo",
 	}
-	
+
 	rendered, err := service.RenderTemplate("welcome", templateData)
 	if err != nil {
 		logger.Errorf("Failed to render template: %v", err)
 		return
 	}
-	
+
 	logger.Infof("✅ Template rendered successfully!")
 	logger.Infof("   Subject: %s", rendered.Subject)
-	
+
 	// Send email with template
 	templateRequest := &services.EmailRequest{
 		To:           []string{"john.doe@example.com"},
@@ -186,13 +186,13 @@ func demoTemplateRendering(cfg config.EmailProviderConfig, logger *utils.SimpleL
 		TemplateData: templateData,
 		Priority:     models.PriorityNormal,
 	}
-	
+
 	response, err := service.SendEmail(ctx, templateRequest)
 	if err != nil {
 		logger.Errorf("Failed to send templated email: %v", err)
 		return
 	}
-	
+
 	logger.Infof("✅ Templated email sent!")
 	logger.Infof("   ID: %s", response.ID)
 }
@@ -203,9 +203,9 @@ func demoBulkEmail(cfg config.EmailProviderConfig, logger *utils.SimpleLogger) {
 		logger.Errorf("Failed to create email service: %v", err)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Bulk email request
 	bulkRequest := &services.BulkEmailRequest{
 		Recipients: []services.BulkEmailRecipient{
@@ -235,7 +235,7 @@ func demoBulkEmail(cfg config.EmailProviderConfig, logger *utils.SimpleLogger) {
 		TemplateData: map[string]string{
 			"notification_title":   "Bulk Email Demo",
 			"notification_message": "Hello {{user_name}}! Your user ID is {{user_id}}.",
-			"timestamp":           time.Now().Format("2006-01-02 15:04:05"),
+			"timestamp":            time.Now().Format("2006-01-02 15:04:05"),
 		},
 		Priority: models.PriorityNormal,
 		Metadata: map[string]string{
@@ -243,16 +243,16 @@ func demoBulkEmail(cfg config.EmailProviderConfig, logger *utils.SimpleLogger) {
 			"batch_id":      "demo-001",
 		},
 	}
-	
+
 	responses, err := service.SendBulkEmail(ctx, bulkRequest)
 	if err != nil {
 		logger.Errorf("Failed to send bulk email: %v", err)
 		return
 	}
-	
+
 	logger.Infof("✅ Bulk email completed!")
 	logger.Infof("   Total emails: %d", len(responses))
-	
+
 	successCount := 0
 	for i, response := range responses {
 		if response.Status == models.StatusSent {
@@ -260,9 +260,9 @@ func demoBulkEmail(cfg config.EmailProviderConfig, logger *utils.SimpleLogger) {
 		}
 		logger.Infof("   Email %d: %s (%s)", i+1, response.Status, response.Message)
 	}
-	
-	logger.Infof("📊 Success rate: %d/%d (%.1f%%)", 
-		successCount, len(responses), 
+
+	logger.Infof("📊 Success rate: %d/%d (%.1f%%)",
+		successCount, len(responses),
 		float64(successCount)/float64(len(responses))*100)
 }
 
@@ -272,9 +272,9 @@ func demoErrorHandling(cfg config.EmailProviderConfig, logger *utils.SimpleLogge
 		logger.Errorf("Failed to create email service: %v", err)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Test various error scenarios
 	errorTests := []struct {
 		name    string
@@ -308,10 +308,10 @@ func demoErrorHandling(cfg config.EmailProviderConfig, logger *utils.SimpleLogge
 			},
 		},
 	}
-	
+
 	for _, test := range errorTests {
 		logger.Infof("🧪 Testing: %s", test.name)
-		
+
 		_, err := service.SendEmail(ctx, test.request)
 		if err != nil {
 			logger.Infof("   ❌ Expected error: %v", err)
@@ -319,7 +319,7 @@ func demoErrorHandling(cfg config.EmailProviderConfig, logger *utils.SimpleLogge
 			logger.Infof("   ⚠️  Unexpected success")
 		}
 	}
-	
+
 	// Test provider validation
 	logger.Infof("🧪 Testing email validation:")
 	validationTests := []string{
@@ -329,7 +329,7 @@ func demoErrorHandling(cfg config.EmailProviderConfig, logger *utils.SimpleLogge
 		"user@domain.co.uk",
 		"test@",
 	}
-	
+
 	for _, email := range validationTests {
 		err := service.ValidateEmailAddress(email)
 		if err != nil {

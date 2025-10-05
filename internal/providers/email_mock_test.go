@@ -22,9 +22,9 @@ func TestNewMockEmailProvider(t *testing.T) {
 			"default_sender": "test@example.com",
 		},
 	}
-	
+
 	provider := NewMockEmailProvider(cfg)
-	
+
 	assert.NotNil(t, provider)
 	assert.Equal(t, cfg, provider.config)
 	assert.True(t, provider.healthy)
@@ -40,11 +40,11 @@ func TestMockEmailProvider_GetType(t *testing.T) {
 func TestMockEmailProvider_IsHealthy(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	// Test healthy provider
 	err := provider.IsHealthy(ctx)
 	assert.NoError(t, err)
-	
+
 	// Test unhealthy provider
 	provider.SetHealthy(false)
 	err = provider.IsHealthy(ctx)
@@ -55,7 +55,7 @@ func TestMockEmailProvider_IsHealthy(t *testing.T) {
 func TestMockEmailProvider_GetConfig(t *testing.T) {
 	provider := createTestEmailProvider()
 	config := provider.GetConfig()
-	
+
 	assert.Equal(t, "Mock Email Provider", config.Name)
 	assert.Equal(t, models.NotificationTypeEmail, config.Type)
 	assert.True(t, config.Enabled)
@@ -68,7 +68,7 @@ func TestMockEmailProvider_GetConfig(t *testing.T) {
 
 func TestMockEmailProvider_ValidateEmailAddress(t *testing.T) {
 	provider := createTestEmailProvider()
-	
+
 	tests := []struct {
 		name    string
 		email   string
@@ -83,7 +83,7 @@ func TestMockEmailProvider_ValidateEmailAddress(t *testing.T) {
 		{"invalid format - missing TLD", "test@example", true},
 		{"invalid format - spaces", "test @example.com", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := provider.ValidateEmailAddress(tt.email)
@@ -99,11 +99,11 @@ func TestMockEmailProvider_ValidateEmailAddress(t *testing.T) {
 func TestMockEmailProvider_SendEmail_Success(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	email := createTestEmailNotification()
-	
+
 	response, err := provider.SendEmail(ctx, email)
-	
+
 	require.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, email.ID, response.ID)
@@ -111,7 +111,7 @@ func TestMockEmailProvider_SendEmail_Success(t *testing.T) {
 	assert.Contains(t, response.Message, "successfully sent")
 	assert.NotEmpty(t, response.ProviderID)
 	assert.NotNil(t, response.SentAt)
-	
+
 	// Check that email was recorded
 	sentEmails := provider.GetSentEmails()
 	assert.Len(t, sentEmails, 1)
@@ -123,7 +123,7 @@ func TestMockEmailProvider_SendEmail_Success(t *testing.T) {
 func TestMockEmailProvider_SendEmail_ValidationErrors(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	tests := []struct {
 		name  string
 		email *models.EmailNotification
@@ -192,13 +192,13 @@ func TestMockEmailProvider_SendEmail_ValidationErrors(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response, err := provider.SendEmail(ctx, tt.email)
 			assert.Error(t, err)
 			assert.Nil(t, response)
-			
+
 			// Check that it's a validation error
 			notifErr, ok := errors.AsNotificationError(err)
 			require.True(t, ok)
@@ -211,14 +211,14 @@ func TestMockEmailProvider_SendEmail_UnhealthyProvider(t *testing.T) {
 	provider := createTestEmailProvider()
 	provider.SetHealthy(false)
 	ctx := context.Background()
-	
+
 	email := createTestEmailNotification()
-	
+
 	response, err := provider.SendEmail(ctx, email)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	
+
 	notifErr, ok := errors.AsNotificationError(err)
 	require.True(t, ok)
 	assert.Equal(t, errors.ErrorCodeProviderUnavailable, notifErr.Code)
@@ -227,7 +227,7 @@ func TestMockEmailProvider_SendEmail_UnhealthyProvider(t *testing.T) {
 func TestMockEmailProvider_Send_GenericNotification(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	notification := &models.Notification{
 		ID:        uuid.New(),
 		Type:      models.NotificationTypeEmail,
@@ -239,14 +239,14 @@ func TestMockEmailProvider_Send_GenericNotification(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	response, err := provider.Send(ctx, notification)
-	
+
 	require.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, notification.ID, response.ID)
 	assert.Equal(t, models.StatusSent, response.Status)
-	
+
 	// Check that email was recorded
 	sentEmails := provider.GetSentEmails()
 	assert.Len(t, sentEmails, 1)
@@ -256,17 +256,17 @@ func TestMockEmailProvider_Send_GenericNotification(t *testing.T) {
 func TestMockEmailProvider_Send_WrongType(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	notification := &models.Notification{
 		ID:   uuid.New(),
 		Type: models.NotificationTypeSMS, // Wrong type
 	}
-	
+
 	response, err := provider.Send(ctx, notification)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	
+
 	notifErr, ok := errors.AsNotificationError(err)
 	require.True(t, ok)
 	assert.Equal(t, errors.ErrorCodeValidationFailed, notifErr.Code)
@@ -274,11 +274,11 @@ func TestMockEmailProvider_Send_WrongType(t *testing.T) {
 
 func TestMockEmailProvider_Templates(t *testing.T) {
 	provider := createTestEmailProvider()
-	
+
 	// Test getting templates
 	templates := provider.GetEmailTemplates()
 	assert.Len(t, templates, 3) // welcome, password_reset, notification
-	
+
 	// Test getting specific template
 	welcomeTemplate, err := provider.GetTemplate("welcome")
 	require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestMockEmailProvider_Templates(t *testing.T) {
 	assert.Contains(t, welcomeTemplate.Subject, "{{service_name}}")
 	assert.Contains(t, welcomeTemplate.Variables, "user_name")
 	assert.Contains(t, welcomeTemplate.Variables, "service_name")
-	
+
 	// Test getting non-existent template
 	_, err = provider.GetTemplate("non-existent")
 	assert.Error(t, err)
@@ -298,7 +298,7 @@ func TestMockEmailProvider_Templates(t *testing.T) {
 
 func TestMockEmailProvider_AddTemplate(t *testing.T) {
 	provider := createTestEmailProvider()
-	
+
 	newTemplate := &EmailTemplate{
 		Name:      "Test Template",
 		Subject:   "Test Subject {{name}}",
@@ -307,15 +307,15 @@ func TestMockEmailProvider_AddTemplate(t *testing.T) {
 		Variables: []string{"name"},
 		Category:  "test",
 	}
-	
+
 	err := provider.AddTemplate(newTemplate)
 	require.NoError(t, err)
-	
+
 	// Check that template was added
 	assert.NotEmpty(t, newTemplate.ID) // ID should be generated
 	assert.False(t, newTemplate.CreatedAt.IsZero())
 	assert.False(t, newTemplate.UpdatedAt.IsZero())
-	
+
 	// Verify we can retrieve it
 	retrieved, err := provider.GetTemplate(newTemplate.ID)
 	require.NoError(t, err)
@@ -325,23 +325,23 @@ func TestMockEmailProvider_AddTemplate(t *testing.T) {
 
 func TestMockEmailProvider_RenderTemplate(t *testing.T) {
 	provider := createTestEmailProvider()
-	
+
 	data := map[string]string{
 		"user_name":    "John Doe",
 		"user_email":   "john@example.com",
 		"service_name": "Test Service",
 	}
-	
+
 	rendered, err := provider.RenderTemplate("welcome", data)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "welcome", rendered.ID)
 	assert.Contains(t, rendered.Subject, "Test Service")
 	assert.Contains(t, rendered.Subject, "John Doe")
 	assert.Contains(t, rendered.HTMLBody, "John Doe")
 	assert.Contains(t, rendered.HTMLBody, "john@example.com")
 	assert.Contains(t, rendered.TextBody, "Test Service")
-	
+
 	// Test with non-existent template
 	_, err = provider.RenderTemplate("non-existent", data)
 	assert.Error(t, err)
@@ -350,7 +350,7 @@ func TestMockEmailProvider_RenderTemplate(t *testing.T) {
 func TestMockEmailProvider_ComplexEmail(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	email := &models.EmailNotification{
 		Notification: models.Notification{
 			ID:       uuid.New(),
@@ -358,17 +358,17 @@ func TestMockEmailProvider_ComplexEmail(t *testing.T) {
 			Subject:  "Complex Email Test",
 			Metadata: map[string]string{"campaign": "test"},
 		},
-		To:      []string{"recipient1@example.com", "recipient2@example.com"},
-		CC:      []string{"cc@example.com"},
-		BCC:     []string{"bcc@example.com"},
-		From:    "sender@example.com",
-		ReplyTo: "reply@example.com",
+		To:       []string{"recipient1@example.com", "recipient2@example.com"},
+		CC:       []string{"cc@example.com"},
+		BCC:      []string{"bcc@example.com"},
+		From:     "sender@example.com",
+		ReplyTo:  "reply@example.com",
 		HTMLBody: "<html><body><h1>Test</h1><p>This is a test email with <strong>formatting</strong>.</p></body></html>",
 		TextBody: "Test\n\nThis is a test email with formatting.",
 		Headers: map[string]string{
-			"X-Priority":     "1",
-			"X-Campaign-ID":  "test-123",
-			"X-Mailer":       "NotificationService",
+			"X-Priority":    "1",
+			"X-Campaign-ID": "test-123",
+			"X-Mailer":      "NotificationService",
 		},
 		Attachments: []models.EmailAttachment{
 			{
@@ -379,16 +379,16 @@ func TestMockEmailProvider_ComplexEmail(t *testing.T) {
 			},
 		},
 	}
-	
+
 	response, err := provider.SendEmail(ctx, email)
-	
+
 	require.NoError(t, err)
 	assert.NotNil(t, response)
-	
+
 	// Verify sent email details
 	sentEmails := provider.GetSentEmails()
 	require.Len(t, sentEmails, 1)
-	
+
 	sentEmail := sentEmails[0]
 	assert.Equal(t, email.To, sentEmail.To)
 	assert.Equal(t, email.CC, sentEmail.CC)
@@ -406,15 +406,15 @@ func TestMockEmailProvider_ComplexEmail(t *testing.T) {
 func TestMockEmailProvider_ClearSentEmails(t *testing.T) {
 	provider := createTestEmailProvider()
 	ctx := context.Background()
-	
+
 	// Send an email
 	email := createTestEmailNotification()
 	_, err := provider.SendEmail(ctx, email)
 	require.NoError(t, err)
-	
+
 	// Verify email was sent
 	assert.Len(t, provider.GetSentEmails(), 1)
-	
+
 	// Clear sent emails
 	provider.ClearSentEmails()
 	assert.Empty(t, provider.GetSentEmails())
